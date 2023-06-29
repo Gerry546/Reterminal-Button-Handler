@@ -27,6 +27,8 @@ int main()
       {
         // F1 Key pressed
         int status = system("rauc install http://192.168.1.20:8080/estalor-reterminal-debug-bundle.raucb");
+        printf("Return status: %i", status);
+        int status = system("reboot");
       }
       else if (31 == ev.code && 1 == ev.value)
       {
