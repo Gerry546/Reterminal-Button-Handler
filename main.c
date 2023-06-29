@@ -23,7 +23,36 @@ int main()
     read(device, &ev, sizeof(ev));
     if (ev.type == 1 && ev.value == 1)
     {
-      printf("Key: %i State: %i\n", ev.code, ev.value);
+      if (30 == ev.code && 1 == ev.value)
+      {
+        // F1 Key pressed
+        int status = system("rauc install http://192.168.1.20:8080/estalor-reterminal-debug-bundle.raucb");
+      }
+      else if (31 == ev.code && 1 == ev.value)
+      {
+        // F2 Key pressed
+        printf("Key: %i State: %i\n", ev.code, ev.value);
+      }
+      else if (32 == ev.code && 1 == ev.value)
+      {
+        // F2 Key pressed
+        printf("Key: %i State: %i\n", ev.code, ev.value);
+      }
+      else if (33 == ev.code && 1 == ev.value)
+      {
+        // Green Key pressed
+        printf("Key: %i State: %i\n", ev.code, ev.value);
+      }
+      else if (142 == ev.code && 1 == ev.value)
+      {
+        // Suspend key pressed
+        printf("Key: %i State: %i\n", ev.code, ev.value);
+      }
+      else
+      {
+        printf("Unknown key pressed.");
+        printf("Key: %i State: %i\n", ev.code, ev.value);
+      }
     }
   }
 }
