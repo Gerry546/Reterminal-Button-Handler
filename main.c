@@ -12,7 +12,7 @@ void INThandler()
 
 int main()
 {
-  char devname[] = "/dev/input/event2";
+  char devname[] = "/dev/input/event3";
   int device = open(devname, O_RDONLY);
   struct input_event ev;
 
