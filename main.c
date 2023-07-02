@@ -1,60 +1,55 @@
 #include <stdio.h>
+#include <libevdev/libevdev.h>
+#include <sys/stat.h>
 #include <fcntl.h>
-#include <linux/input.h>
-#include <unistd.h>
-#include <signal.h>
-#include <stdlib.h>
-
-void INThandler()
-{
-  exit(0);
-}
 
 int main()
 {
-  char devname[] = "/dev/input/event3";
-  int device = open(devname, O_RDONLY);
-  struct input_event ev;
+  struct libevdev *dev = NULL;
+  const char *file;
+  int fd;
+  int rc = 1;
+  char *files[] = {
+      "/dev/input/event0",
+      "/dev/input/event1",
+      "/dev/input/event2",
+      "/dev/input/event3",
+      "/dev/input/event4",
+  };
 
-  signal(SIGINT, INThandler);
-
-  while (1)
+  // Iterate over the possibility to find the correct event device
+  for (int i = 0; i < 5; ++i)
   {
-    read(device, &ev, sizeof(ev));
-    if (ev.type == 1 && ev.value == 1)
+    // Read the input
+    file = files[i];
+    fd = open(file, O_RDONLY);
+    if (fd < 0)
     {
-      if (30 == ev.code && 1 == ev.value)
-      {
-        // F1 Key pressed
-        int status = system("rauc install http://192.168.1.20:8080/estalor-reterminal-debug-bundle.raucb");
-        printf("Return status: %i", status);
-        system("reboot");
-      }
-      else if (31 == ev.code && 1 == ev.value)
-      {
-        // F2 Key pressed
-        printf("Key: %i State: %i\n", ev.code, ev.value);
-      }
-      else if (32 == ev.code && 1 == ev.value)
-      {
-        // F2 Key pressed
-        printf("Key: %i State: %i\n", ev.code, ev.value);
-      }
-      else if (33 == ev.code && 1 == ev.value)
-      {
-        // Green Key pressed
-        printf("Key: %i State: %i\n", ev.code, ev.value);
-      }
-      else if (142 == ev.code && 1 == ev.value)
-      {
-        // Suspend key pressed
-        printf("Key: %i State: %i\n", ev.code, ev.value);
-      }
-      else
-      {
-        printf("Unknown key pressed.");
-        printf("Key: %i State: %i\n", ev.code, ev.value);
-      }
+      // File cannot be opened, exit...
+      perror("Failed to open device");
+      goto out;
     }
+
+    rc = libevdev_new_from_fd(fd, &dev);
+    if (rc < 0)
+    {
+      fprintf(stderr, "Failed to init libevdev (%S)\n", strerror(-rc));
+      goto out;
+    }
+
+    printf("Input device ID: bus %#x vendor %#x product %#x\n",
+          libevdev_get_id_bustype(dev),
+          libevdev_get_id_vendor(dev),
+          libevdev_get_id_product(dev));
+    printf("Evdev version: %x\n", libevdev_get_driver_version(dev));
+    printf("Input device name: \"%s\"\n", libevdev_get_name(dev));
+    printf("Phys location: %s\n", libevdev_get_phys(dev));
+    printf("Uniq identifier: %s\n", libevdev_get_uniq(dev));
+
+    rc = 0;
   }
+
+out:
+  libevdev_free(dev);
+  return rc;
 }
