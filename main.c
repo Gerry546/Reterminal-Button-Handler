@@ -40,7 +40,7 @@ static int handle_event(struct input_event *ev)
       // Green Key pressed
       printf("Key: %i State: %i\n", ev->code, ev->value);
     }
-    else if (142 == ev->code && 1 == ev->value)
+    else if (34 == ev->code && 1 == ev->value)
     {
       // Suspend key pressed
       printf("Key: %i State: %i\n", ev->code, ev->value);
