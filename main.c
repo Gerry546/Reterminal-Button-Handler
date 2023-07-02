@@ -66,7 +66,7 @@ int main()
       goto out;
     }
 
-    if (strcmp("gpio_keys", libevdev_get_name(dev)))
+    if (!strcmp("gpio_keys", libevdev_get_name(dev)))
     {
       printf("Found the correct device");
       printf("Input device name: \"%s\"\n", libevdev_get_name(dev));
