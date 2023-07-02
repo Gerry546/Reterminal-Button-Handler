@@ -2,6 +2,35 @@
 #include <libevdev/libevdev.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <string.h>
+
+static int print_event(struct input_event *ev)
+{
+	if (ev->type == EV_SYN)
+		printf("Event: time %ld.%06ld, ++++++++++++++++++++ %s +++++++++++++++\n",
+				ev->input_event_sec,
+				ev->input_event_usec,
+				libevdev_event_type_get_name(ev->type));
+	else
+		printf("Event: time %ld.%06ld, type %d (%s), code %d (%s), value %d\n",
+			ev->input_event_sec,
+			ev->input_event_usec,
+			ev->type,
+			libevdev_event_type_get_name(ev->type),
+			ev->code,
+			libevdev_event_code_get_name(ev->type, ev->code),
+			ev->value);
+	return 0;
+}
+
+static int print_sync_event(struct input_event *ev)
+{
+	printf("SYNC: ");
+	print_event(ev);
+	return 0;
+}
+
 
 int main()
 {
@@ -37,17 +66,76 @@ int main()
       goto out;
     }
 
-    printf("Input device ID: bus %#x vendor %#x product %#x\n",
-          libevdev_get_id_bustype(dev),
-          libevdev_get_id_vendor(dev),
-          libevdev_get_id_product(dev));
-    printf("Evdev version: %x\n", libevdev_get_driver_version(dev));
-    printf("Input device name: \"%s\"\n", libevdev_get_name(dev));
-    printf("Phys location: %s\n", libevdev_get_phys(dev));
-    printf("Uniq identifier: %s\n", libevdev_get_uniq(dev));
+    if (strcmp("gpio_keys", libevdev_get_name(dev)))
+    {
+      printf("Found the correct device");
+      printf("Input device name: \"%s\"\n", libevdev_get_name(dev));
+      break;
+    }
 
-    rc = 0;
+    
   }
+
+  do {
+		struct input_event ev;
+		rc = libevdev_next_event(dev, LIBEVDEV_READ_FLAG_NORMAL|LIBEVDEV_READ_FLAG_BLOCKING, &ev);
+		if (rc == LIBEVDEV_READ_STATUS_SYNC) {
+			printf("::::::::::::::::::::: dropped ::::::::::::::::::::::\n");
+			while (rc == LIBEVDEV_READ_STATUS_SYNC) {
+				print_sync_event(&ev);
+				rc = libevdev_next_event(dev, LIBEVDEV_READ_FLAG_SYNC, &ev);
+			}
+			printf("::::::::::::::::::::: re-synced ::::::::::::::::::::::\n");
+		} else if (rc == LIBEVDEV_READ_STATUS_SUCCESS)
+			print_event(&ev);
+	} while (rc == LIBEVDEV_READ_STATUS_SYNC || rc == LIBEVDEV_READ_STATUS_SUCCESS || rc == -EAGAIN);
+
+	if (rc != LIBEVDEV_READ_STATUS_SUCCESS && rc != -EAGAIN)
+		fprintf(stderr, "Failed to handle events: %s\n", strerror(-rc));
+
+
+
+  // while (1)
+  // {
+  //   read(device, &ev, sizeof(ev));
+  //   if (ev.type == 1 && ev.value == 1)
+  //   {
+  //     if (30 == ev.code && 1 == ev.value)
+  //     {
+  //       // F1 Key pressed
+  //       int status = system("rauc install http://192.168.1.20:8080/estalor-reterminal-debug-bundle.raucb");
+  //       printf("Return status: %i", status);
+  //       system("reboot");
+  //     }
+  //     else if (31 == ev.code && 1 == ev.value)
+  //     {
+  //       // F2 Key pressed
+  //       printf("Key: %i State: %i\n", ev.code, ev.value);
+  //     }
+  //     else if (32 == ev.code && 1 == ev.value)
+  //     {
+  //       // F2 Key pressed
+  //       printf("Key: %i State: %i\n", ev.code, ev.value);
+  //     }
+  //     else if (33 == ev.code && 1 == ev.value)
+  //     {
+  //       // Green Key pressed
+  //       printf("Key: %i State: %i\n", ev.code, ev.value);
+  //     }
+  //     else if (142 == ev.code && 1 == ev.value)
+  //     {
+  //       // Suspend key pressed
+  //       printf("Key: %i State: %i\n", ev.code, ev.value);
+  //     }
+  //     else
+  //     {
+  //       printf("Unknown key pressed.");
+  //       printf("Key: %i State: %i\n", ev.code, ev.value);
+  //     }
+  //   }
+  // }
+
+  rc = 0;
 
 out:
   libevdev_free(dev);
