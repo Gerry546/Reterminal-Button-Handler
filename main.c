@@ -4,15 +4,11 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 
-static int print_event(struct input_event *ev)
+static int handle_event(struct input_event *ev)
 {
-	if (ev->type == EV_SYN)
-		printf("Event: time %ld.%06ld, ++++++++++++++++++++ %s +++++++++++++++\n",
-				ev->input_event_sec,
-				ev->input_event_usec,
-				libevdev_event_type_get_name(ev->type));
-	else
+	if (ev->type != EV_SYN)
 		printf("Event: time %ld.%06ld, type %d (%s), code %d (%s), value %d\n",
 			ev->input_event_sec,
 			ev->input_event_usec,
@@ -21,16 +17,41 @@ static int print_event(struct input_event *ev)
 			ev->code,
 			libevdev_event_code_get_name(ev->type, ev->code),
 			ev->value);
+
+    if (30 == ev->code && 1 == ev->value)
+    {
+      // F1 Key pressed
+      int status = system("rauc install http://192.168.1.20:8080/estalor-reterminal-debug-bundle.raucb");
+      printf("Return status: %i", status);
+      system("reboot");
+    }
+    else if (31 == ev->code && 1 == ev->value)
+    {
+      // F2 Key pressed
+      printf("Key: %i State: %i\n", ev->code, ev->value);
+    }
+    else if (32 == ev->code && 1 == ev->value)
+    {
+      // F2 Key pressed
+      printf("Key: %i State: %i\n", ev->code, ev->value);
+    }
+    else if (33 == ev->code && 1 == ev->value)
+    {
+      // Green Key pressed
+      printf("Key: %i State: %i\n", ev->code, ev->value);
+    }
+    else if (142 == ev->code && 1 == ev->value)
+    {
+      // Suspend key pressed
+      printf("Key: %i State: %i\n", ev->code, ev->value);
+    }
+    else
+    {
+      printf("Unknown key pressed.");
+      printf("Key: %i State: %i\n", ev->code, ev->value);
+    }
 	return 0;
 }
-
-static int print_sync_event(struct input_event *ev)
-{
-	printf("SYNC: ");
-	print_event(ev);
-	return 0;
-}
-
 
 int main()
 {
@@ -62,7 +83,7 @@ int main()
     rc = libevdev_new_from_fd(fd, &dev);
     if (rc < 0)
     {
-      fprintf(stderr, "Failed to init libevdev (%S)\n", strerror(-rc));
+      fprintf(stderr, "Failed to init libevdev (%s)\n", strerror(-rc));
       goto out;
     }
 
@@ -73,68 +94,17 @@ int main()
       break;
     }
 
-    
   }
 
   do {
 		struct input_event ev;
 		rc = libevdev_next_event(dev, LIBEVDEV_READ_FLAG_NORMAL|LIBEVDEV_READ_FLAG_BLOCKING, &ev);
-		if (rc == LIBEVDEV_READ_STATUS_SYNC) {
-			printf("::::::::::::::::::::: dropped ::::::::::::::::::::::\n");
-			while (rc == LIBEVDEV_READ_STATUS_SYNC) {
-				print_sync_event(&ev);
-				rc = libevdev_next_event(dev, LIBEVDEV_READ_FLAG_SYNC, &ev);
-			}
-			printf("::::::::::::::::::::: re-synced ::::::::::::::::::::::\n");
-		} else if (rc == LIBEVDEV_READ_STATUS_SUCCESS)
-			print_event(&ev);
+		if (rc == LIBEVDEV_READ_STATUS_SUCCESS)
+			handle_event(&ev);
 	} while (rc == LIBEVDEV_READ_STATUS_SYNC || rc == LIBEVDEV_READ_STATUS_SUCCESS || rc == -EAGAIN);
 
 	if (rc != LIBEVDEV_READ_STATUS_SUCCESS && rc != -EAGAIN)
 		fprintf(stderr, "Failed to handle events: %s\n", strerror(-rc));
-
-
-
-  // while (1)
-  // {
-  //   read(device, &ev, sizeof(ev));
-  //   if (ev.type == 1 && ev.value == 1)
-  //   {
-  //     if (30 == ev.code && 1 == ev.value)
-  //     {
-  //       // F1 Key pressed
-  //       int status = system("rauc install http://192.168.1.20:8080/estalor-reterminal-debug-bundle.raucb");
-  //       printf("Return status: %i", status);
-  //       system("reboot");
-  //     }
-  //     else if (31 == ev.code && 1 == ev.value)
-  //     {
-  //       // F2 Key pressed
-  //       printf("Key: %i State: %i\n", ev.code, ev.value);
-  //     }
-  //     else if (32 == ev.code && 1 == ev.value)
-  //     {
-  //       // F2 Key pressed
-  //       printf("Key: %i State: %i\n", ev.code, ev.value);
-  //     }
-  //     else if (33 == ev.code && 1 == ev.value)
-  //     {
-  //       // Green Key pressed
-  //       printf("Key: %i State: %i\n", ev.code, ev.value);
-  //     }
-  //     else if (142 == ev.code && 1 == ev.value)
-  //     {
-  //       // Suspend key pressed
-  //       printf("Key: %i State: %i\n", ev.code, ev.value);
-  //     }
-  //     else
-  //     {
-  //       printf("Unknown key pressed.");
-  //       printf("Key: %i State: %i\n", ev.code, ev.value);
-  //     }
-  //   }
-  // }
-
   rc = 0;
 
 out:
