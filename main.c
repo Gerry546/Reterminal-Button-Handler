@@ -68,6 +68,8 @@ int main()
       "/dev/input/event2",
       "/dev/input/event3",
       "/dev/input/event4",
+      "/dev/input/event5",
+      "/dev/input/event6",
   };
 
   // Iterate over the possibility to find the correct event device
