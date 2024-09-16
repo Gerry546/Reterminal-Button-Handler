@@ -73,7 +73,7 @@ int main()
   };
 
   // Iterate over the possibility to find the correct event device
-  for (int i = 0; i < 5; ++i)
+  for (int i = 0; i < ; ++i)
   {
     // Read the input
     file = files[i];
