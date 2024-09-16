@@ -21,7 +21,7 @@ static int handle_event(struct input_event *ev)
     if (30 == ev->code && 1 == ev->value)
     {
       // F1 Key pressed
-      int status = system("rauc install http://192.168.1.20:8080/estalor-reterminal-bundle-debug.raucb");
+      int status = system("rauc install http://192.168.1.19:8888/reterminal-bundle.raucb");
       printf("Return status: %i", status);
       if (status != -1)
       {
